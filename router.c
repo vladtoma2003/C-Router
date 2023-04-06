@@ -303,10 +303,6 @@ int main(int argc, char *argv[])
 				char *temp = malloc(sizeof(char) * MAX_PACKET_LEN);
 				memcpy(temp, buf, len);
 				queue_enq(q_struct->q, temp);
-				for(int i = 0; i < 6; ++i) {
-					printf("%x.", ((struct ether_header *) buf)->ether_shost[i]);
-				}
-				printf("\n");
 				++q_struct->size;
 
 				char *request = malloc(sizeof(char) * MAX_PACKET_LEN);
