@@ -1,0 +1,24 @@
+[root@192-168-0-119 Tema1PCom]# make run_router0
+gcc -Iinclude -c -Wall -Werror -Wno-error=unused-variable -fPIC router.c -o rout
+er.o
+gcc -Iinclude -c -Wall -Werror -Wno-error=unused-variable -fPIC lib/queue.c -o l
+ib/queue.o
+gcc -Iinclude -c -Wall -Werror -Wno-error=unused-variable -fPIC lib/list.c -o li
+b/list.o
+gcc -Iinclude -c -Wall -Werror -Wno-error=unused-variable -fPIC lib/lib.c -o lib
+/lib.o
+gcc -L. router.o lib/queue.o lib/list.o lib/lib.o  -o router
+./router rtable0.txt rr-0-1 r-0 r-1
+Setting up interface: rr-0-1
+Setting up interface: r-0
+Setting up interface: r-1
+
+
+
+
+
+
+
+
+
+
