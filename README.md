@@ -17,4 +17,4 @@ Am inceput prin alocarea tabelei de rutare si tabelei a(goala pentru inceput). D
         - s-a primit un echo(tipul este 0)
         - nu s-a gasit ruta in tabela de rutare (tipul este 3)
         - ttl a ajuns sa fie 1 sau mai putin (tipul este 11)
-    In toate cele 3 cazuri se reface header-ul de ethernet (cu adresele MAC interschimbate, trebuie trimis inapoi), se genereaza un nou header de tip IPV4 si se genereaza un header de tip ICMP. In final, in vectorul de date se vor afla urmatoarele date: ETH, IPV4, ICMP, IPV4_old(pentru codurile 3 si 11).
+    In toate cele 3 cazuri se reface header-ul de ethernet (cu adresele MAC interschimbate, trebuie trimis inapoi), se genereaza un nou header de tip IPV4 si se genereaza un header de tip ICMP. In final, in vectorul de date se vor afla urmatoarele date: ETH, IPV4, ICMP, primii 64 bits din header-ul IPV4 vechi.

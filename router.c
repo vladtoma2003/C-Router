@@ -28,6 +28,44 @@ struct route_table_entry *get_best_route(uint32_t ip_dest) {
 	return next;
 }
 
+char *generate_ICMP(struct ether_header *eth_hdr, struct iphdr *ip_hdr, uint8_t type) {
+	struct icmphdr *icmp_hdr = malloc(sizeof(struct icmphdr));
+	struct iphdr *ip_hdr_icmp = malloc(sizeof(struct iphdr));
+	struct ether_header *eth_hdr_icmp = malloc(sizeof(struct ether_header));
+
+	// ICMP HEADER
+	icmp_hdr->type = type; // 0 - echo, 3 - ruta, 11 - ttl
+	icmp_hdr->code = 0;
+	icmp_hdr->checksum = 0;
+
+	icmp_hdr->checksum = htons(checksum((uint16_t *)icmp_hdr, sizeof(struct icmphdr))); // calculez checksum
+
+	memcpy(ip_hdr_icmp, ip_hdr, sizeof(struct iphdr)); // copiez ip_hdr in ip_hdr_icmp
+	uint32_t temp = ip_hdr_icmp->saddr;
+	ip_hdr_icmp->saddr = ip_hdr_icmp->daddr;
+	ip_hdr_icmp->daddr = temp;
+
+	ip_hdr_icmp->protocol = 1; // ICMP
+	ip_hdr_icmp->tot_len = htons(sizeof(struct iphdr) + sizeof(struct icmphdr));
+
+	memcpy(eth_hdr_icmp, eth_hdr, sizeof(struct ether_header)); // copiez eth_hdr in eth_hdr_icmp
+	for(int i = 0; i < 6; ++i) {
+		uint8_t temp = eth_hdr_icmp->ether_shost[i];
+		eth_hdr_icmp->ether_shost[i] = eth_hdr_icmp->ether_dhost[i];
+		eth_hdr_icmp->ether_dhost[i] = temp;
+	}
+
+	char *buf_icmp = malloc(sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr));
+	memcpy(buf_icmp, eth_hdr_icmp, sizeof(struct ether_header));
+	memcpy(buf_icmp + sizeof(struct ether_header), ip_hdr_icmp, sizeof(struct iphdr));
+	memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr), icmp_hdr, sizeof(struct icmphdr));
+
+	// adaug primii 8 octeti din ip_hdr
+	memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr), ip_hdr, 8*sizeof(char)); 
+
+	return buf_icmp;
+}
+
 void afisare(uint32_t addr) {
     printf("%d.%d.%d.%d\n", (addr>>24)&0x00ff, (addr>>16)&0x00ff,(addr>>8)&0x00ff,addr&0x00ff);
 }
@@ -162,37 +200,7 @@ int main(int argc, char *argv[])
 
 			if(ntohl(ip_current) == ntohl(ip_hdr->daddr)) { // ICMP
 				printf("ICMP\n");
-				struct icmphdr *icmp_hdr = malloc(sizeof(struct icmphdr));
-				struct iphdr *ip_hdr_icmp = malloc(sizeof(struct iphdr));
-				struct ether_header *eth_hdr_icmp = malloc(sizeof(struct ether_header));
-
-				// ICMP HEADER
-				icmp_hdr->type = 0; // 0 - echo, 3 - ruta, 11 - ttl
-				icmp_hdr->code = 0;
-				icmp_hdr->checksum = 0;
-
-				icmp_hdr->checksum = htons(checksum((uint16_t *)icmp_hdr, sizeof(struct icmphdr))); // calculez checksum
-
-				memcpy(ip_hdr_icmp, ip_hdr, sizeof(struct iphdr)); // copiez ip_hdr in ip_hdr_icmp
-				uint32_t temp = ip_hdr_icmp->saddr;
-				ip_hdr_icmp->saddr = ip_hdr_icmp->daddr;
-				ip_hdr_icmp->daddr = temp;
-
-				ip_hdr_icmp->protocol = 1; // ICMP
-				ip_hdr_icmp->tot_len = htons(sizeof(struct iphdr) + sizeof(struct icmphdr));
-
-				memcpy(eth_hdr_icmp, eth_hdr, sizeof(struct ether_header)); // copiez eth_hdr in eth_hdr_icmp
-				for(int i = 0; i < 6; ++i) {
-					uint8_t temp = eth_hdr_icmp->ether_shost[i];
-					eth_hdr_icmp->ether_shost[i] = eth_hdr_icmp->ether_dhost[i];
-					eth_hdr_icmp->ether_dhost[i] = temp;
-				}
-
-				char *buf_icmp = malloc(sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr));
-				memcpy(buf_icmp, eth_hdr_icmp, sizeof(struct ether_header));
-				memcpy(buf_icmp + sizeof(struct ether_header), ip_hdr_icmp, sizeof(struct iphdr));
-				memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr), icmp_hdr, sizeof(struct icmphdr));
-				// memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr), ip_hdr, sizeof(struct iphdr));
+				char *buf_icmp = generate_ICMP(eth_hdr, ip_hdr, 0);
 
 				send_to_link(interface, buf_icmp, sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr));
 				continue;
@@ -207,37 +215,7 @@ int main(int argc, char *argv[])
 
 			if (ip_hdr->ttl <= 1) { // verific ttl
 				printf("Bad TTL\n");
-				struct icmphdr *icmp_hdr = malloc(sizeof(struct icmphdr));
-				struct iphdr *ip_hdr_icmp = malloc(sizeof(struct iphdr));
-				struct ether_header *eth_hdr_icmp = malloc(sizeof(struct ether_header));
-
-				// ICMP HEADER
-				icmp_hdr->type = 11; // 0 - echo, 3 - ruta, 11 - ttl
-				icmp_hdr->code = 0;
-				icmp_hdr->checksum = 0;
-
-				icmp_hdr->checksum = htons(checksum((uint16_t *)icmp_hdr, sizeof(struct icmphdr))); // calculez checksum
-
-				memcpy(ip_hdr_icmp, ip_hdr, sizeof(struct iphdr)); // copiez ip_hdr in ip_hdr_icmp
-				uint32_t temp = ip_hdr_icmp->saddr;
-				ip_hdr_icmp->saddr = ip_hdr_icmp->daddr;
-				ip_hdr_icmp->daddr = temp;
-
-				ip_hdr_icmp->protocol = 1; // ICMP
-				ip_hdr_icmp->tot_len = htons(sizeof(struct iphdr) + sizeof(struct icmphdr));
-
-				memcpy(eth_hdr_icmp, eth_hdr, sizeof(struct ether_header)); // copiez eth_hdr in eth_hdr_icmp
-				for(int i = 0; i < 6; ++i) {
-					uint8_t temp = eth_hdr_icmp->ether_shost[i];
-					eth_hdr_icmp->ether_shost[i] = eth_hdr_icmp->ether_dhost[i];
-					eth_hdr_icmp->ether_dhost[i] = temp;
-				}
-
-				char *buf_icmp = malloc(sizeof(struct ether_header) + 2*sizeof(struct iphdr) + sizeof(struct icmphdr));
-				memcpy(buf_icmp, eth_hdr_icmp, sizeof(struct ether_header));
-				memcpy(buf_icmp + sizeof(struct ether_header), ip_hdr_icmp, sizeof(struct iphdr));
-				memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr), icmp_hdr, sizeof(struct icmphdr));
-				memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr), ip_hdr, sizeof(struct iphdr));
+				char *buf_icmp = generate_ICMP(eth_hdr, ip_hdr, 11);
 
 				send_to_link(interface, buf_icmp, sizeof(struct ether_header) + 2*sizeof(struct iphdr) + sizeof(struct icmphdr));
 				
@@ -252,37 +230,7 @@ int main(int argc, char *argv[])
 			
 			if(!next){ // verific existenta rutei
 				printf("Route not found\n");
-				struct icmphdr *icmp_hdr = malloc(sizeof(struct icmphdr));
-				struct iphdr *ip_hdr_icmp = malloc(sizeof(struct iphdr));
-				struct ether_header *eth_hdr_icmp = malloc(sizeof(struct ether_header));
-
-				// ICMP HEADER
-				icmp_hdr->type = 3; // 0 - echo, 3 - ruta, 11 - ttl
-				icmp_hdr->code = 0;
-				icmp_hdr->checksum = 0;
-
-				icmp_hdr->checksum = htons(checksum((uint16_t *)icmp_hdr, sizeof(struct icmphdr))); // calculez checksum
-
-				memcpy(ip_hdr_icmp, ip_hdr, sizeof(struct iphdr)); // copiez ip_hdr in ip_hdr_icmp
-				uint32_t temp = ip_hdr_icmp->saddr;
-				ip_hdr_icmp->saddr = ip_hdr_icmp->daddr;
-				ip_hdr_icmp->daddr = temp;
-
-				ip_hdr_icmp->protocol = 1; // ICMP
-				ip_hdr_icmp->tot_len = htons(sizeof(struct iphdr) + sizeof(struct icmphdr));
-
-				memcpy(eth_hdr_icmp, eth_hdr, sizeof(struct ether_header)); // copiez eth_hdr in eth_hdr_icmp
-				for(int i = 0; i < 6; ++i) {
-					uint8_t temp = eth_hdr_icmp->ether_shost[i];
-					eth_hdr_icmp->ether_shost[i] = eth_hdr_icmp->ether_dhost[i];
-					eth_hdr_icmp->ether_dhost[i] = temp;
-				}
-
-				char *buf_icmp = malloc(sizeof(struct ether_header) + 2*sizeof(struct iphdr) + sizeof(struct icmphdr));
-				memcpy(buf_icmp, eth_hdr_icmp, sizeof(struct ether_header));
-				memcpy(buf_icmp + sizeof(struct ether_header), ip_hdr_icmp, sizeof(struct iphdr));
-				memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr), icmp_hdr, sizeof(struct icmphdr));
-				memcpy(buf_icmp + sizeof(struct ether_header) + sizeof(struct iphdr) + sizeof(struct icmphdr), ip_hdr, sizeof(struct iphdr));
+				char *buf_icmp = generate_ICMP(eth_hdr, ip_hdr, 3);
 
 				send_to_link(interface, buf_icmp, sizeof(struct ether_header) + 2*sizeof(struct iphdr) + sizeof(struct icmphdr));
 			
