@@ -2,7 +2,7 @@ Tema 1 - PROTOCOALE DE COMUNICARE
 In aceasta tema am avut de implementat un router pentru comunicarea a mai multor host-uri. Host-urile pot trimite sau primi pachete de tip IPV4 sau ARP.
 
 Proces:
-Am inceput prin alocarea tabelei de rutare si tabelei a(goala pentru inceput). Dupa aceea am castat informatia din buffer la header-ul de tip eth pentru a verifica ce fel de informatie am primit. Exista 2 tipuri:
+Am inceput prin alocarea tabelei de rutare si tabelei ARP(goala pentru inceput). Dupa aceea am castat informatia din buffer la header-ul de tip eth pentru a verifica ce fel de informatie am primit. Exista 2 tipuri:
 
 1. ARP(cu codul 0x0806)
     * In acest caz trebuie verificat daca este Request sau Reply.     
